@@ -64,6 +64,43 @@ const Dashboard = () => {
     }
   };
 
+  const checkDailySurveyLimit = async () => {
+    if (!session?.user?.id) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase
+      .from("survey_responses")
+      .select("completed_at")
+      .eq("user_id", session.user.id)
+      .gte("completed_at", today.toISOString());
+
+    if (error) {
+      console.error("Error checking daily limit:", error);
+      return false;
+    }
+
+    return (data?.length || 0) >= 1;
+  };
+
+  const hasActivePackage = async () => {
+    if (!session?.user?.id) return false;
+
+    const { data, error } = await supabase
+      .from("package_purchases")
+      .select("*, packages(*)")
+      .eq("user_id", session.user.id)
+      .eq("status", "verified");
+
+    if (error) {
+      console.error("Error checking packages:", error);
+      return false;
+    }
+
+    return (data?.length || 0) > 0;
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.success("Signed out successfully");
@@ -73,6 +110,18 @@ const Dashboard = () => {
     if (profile?.referral_code) {
       navigator.clipboard.writeText(profile.referral_code);
       toast.success("Referral code copied!");
+    }
+  };
+
+  const handleStartSurvey = async (surveyId: string) => {
+    const reachedLimit = await checkDailySurveyLimit();
+    const hasPackage = await hasActivePackage();
+
+    if (reachedLimit && !hasPackage) {
+      toast.info("You've completed your free daily survey. Purchase a package to continue!");
+      navigate("/packages");
+    } else {
+      navigate(`/survey/${surveyId}`);
     }
   };
 
@@ -110,7 +159,7 @@ const Dashboard = () => {
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Available Balance</p>
                 <p className="text-3xl font-bold text-primary">
-                  ${profile?.balance?.toFixed(2) || "0.00"}
+                  Ksh {profile?.balance?.toFixed(2) || "0.00"}
                 </p>
               </div>
               <DollarSign className="w-12 h-12 text-primary opacity-20" />
@@ -125,7 +174,7 @@ const Dashboard = () => {
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Total Earned</p>
                 <p className="text-3xl font-bold text-success">
-                  ${profile?.total_earned?.toFixed(2) || "0.00"}
+                  Ksh {profile?.total_earned?.toFixed(2) || "0.00"}
                 </p>
               </div>
               <TrendingUp className="w-12 h-12 text-success opacity-20" />
@@ -175,10 +224,10 @@ const Dashboard = () => {
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-2xl font-bold text-success">
-                      ${survey.payout.toFixed(2)}
+                      Ksh {survey.payout.toFixed(2)}
                     </span>
                     <Button
-                      onClick={() => navigate(`/survey/${survey.id}`)}
+                      onClick={() => handleStartSurvey(survey.id)}
                       className="bg-primary hover:bg-primary-hover"
                     >
                       Start Survey

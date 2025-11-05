@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      package_purchases: {
+        Row: {
+          created_at: string | null
+          id: string
+          package_id: string
+          payment_code: string
+          status: string | null
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          package_id: string
+          payment_code: string
+          status?: string | null
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          package_id?: string
+          payment_code?: string
+          status?: string | null
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          price: number
+          surveys_allowed: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          price: number
+          surveys_allowed: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          surveys_allowed?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           balance: number | null

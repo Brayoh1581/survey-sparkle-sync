@@ -10,7 +10,7 @@ const Index = () => {
     {
       icon: <DollarSign className="w-8 h-8 text-primary" />,
       title: "High Paying Surveys",
-      description: "Earn $5-50 per survey - highest rates in the industry"
+      description: "Earn Ksh 50-500 per survey - highest rates in the industry"
     },
     {
       icon: <Users className="w-8 h-8 text-primary" />,
@@ -112,7 +112,7 @@ const Index = () => {
               <div className="text-muted-foreground">Active Users</div>
             </div>
             <div className="bg-card/80 backdrop-blur p-6 rounded-lg shadow-lg border border-border">
-              <div className="text-4xl font-bold text-primary mb-2">$2M+</div>
+              <div className="text-4xl font-bold text-primary mb-2">Ksh 200M+</div>
               <div className="text-muted-foreground">Total Payouts</div>
             </div>
             <div className="bg-card/80 backdrop-blur p-6 rounded-lg shadow-lg border border-border">

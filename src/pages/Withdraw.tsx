@@ -130,7 +130,7 @@ const Withdraw = () => {
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-primary mb-2">Withdraw Funds</h1>
             <p className="text-muted-foreground">
-              Available Balance: <span className="text-success font-bold text-xl">${balance.toFixed(2)}</span>
+              Available Balance: <span className="text-success font-bold text-xl">Ksh {balance.toFixed(2)}</span>
             </p>
           </div>
 

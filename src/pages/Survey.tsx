@@ -164,7 +164,7 @@ const Survey = () => {
         }
       }
 
-      toast.success(`Survey completed! You earned $${survey.payout.toFixed(2)}`);
+      toast.success(`Survey completed! You earned Ksh ${survey.payout.toFixed(2)}`);
       navigate("/dashboard");
     } catch (error) {
       console.error("Error submitting survey:", error);
@@ -202,7 +202,7 @@ const Survey = () => {
             <h1 className="text-3xl font-bold text-primary mb-2">{survey.title}</h1>
             <p className="text-muted-foreground mb-4">{survey.description}</p>
             <div className="inline-block bg-success text-white px-4 py-2 rounded-lg font-bold">
-              Payout: ${survey.payout.toFixed(2)}
+              Payout: Ksh {survey.payout.toFixed(2)}
             </div>
           </div>
 

@@ -1,0 +1,157 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Session } from "@supabase/supabase-js";
+
+const ValidatePayment = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [session, setSession] = useState<Session | null>(null);
+  const [paymentCode, setPaymentCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const packageId = searchParams.get("package");
+  const packageName = searchParams.get("name");
+  const packagePrice = searchParams.get("price");
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session || !packageId) return;
+
+    if (!paymentCode.trim()) {
+      toast.error("Please enter your payment code");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Insert payment verification request
+      const { error } = await supabase
+        .from("package_purchases")
+        .insert({
+          user_id: session.user.id,
+          package_id: packageId,
+          payment_code: paymentCode.trim(),
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      toast.success("Payment submitted for verification! You'll be notified once approved.");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error submitting payment:", error);
+      toast.error("Failed to submit payment verification");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-light via-background to-secondary py-12 px-4">
+      <div className="container mx-auto max-w-2xl">
+        <Card className="p-8 bg-card border-2 border-border">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-primary mb-2">Validate Payment</h1>
+            <p className="text-muted-foreground">Complete your package purchase</p>
+          </div>
+
+          <div className="bg-primary/10 p-6 rounded-lg mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-muted-foreground">Package:</span>
+              <span className="font-semibold text-primary">{packageName}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Amount:</span>
+              <span className="text-2xl font-bold text-success">Ksh {packagePrice}</span>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border p-6 rounded-lg mb-8">
+            <h3 className="font-semibold mb-4 text-primary">Payment Instructions:</h3>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+              <li>Go to M-PESA on your phone</li>
+              <li>Select Lipa Na M-PESA</li>
+              <li>Select Pay Bill</li>
+              <li>Enter Business Number: <strong className="text-foreground">123456</strong></li>
+              <li>Enter Account Number: <strong className="text-foreground">SURVEY</strong></li>
+              <li>Enter Amount: <strong className="text-foreground">Ksh {packagePrice}</strong></li>
+              <li>Enter your M-PESA PIN and send</li>
+              <li>You will receive a confirmation SMS with a payment code</li>
+              <li>Enter the payment code below</li>
+            </ol>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="paymentCode">M-PESA Payment Code</Label>
+              <Input
+                id="paymentCode"
+                type="text"
+                placeholder="e.g., QGH3X8Y9ZW"
+                value={paymentCode}
+                onChange={(e) => setPaymentCode(e.target.value.toUpperCase())}
+                required
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the confirmation code from your M-PESA SMS
+              </p>
+            </div>
+
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/packages")}
+                className="flex-1"
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 bg-primary hover:bg-primary-hover"
+              >
+                {submitting ? "Submitting..." : "Submit for Verification"}
+              </Button>
+            </div>
+          </form>
+
+          <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">Note:</strong> Your payment will be verified within 24 hours. 
+              Once approved, you'll receive a notification and the surveys will be unlocked.
+            </p>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default ValidatePayment;

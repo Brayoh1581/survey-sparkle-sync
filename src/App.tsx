@@ -8,6 +8,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Survey from "./pages/Survey";
 import Withdraw from "./pages/Withdraw";
+import Packages from "./pages/Packages";
+import ValidatePayment from "./pages/ValidatePayment";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,8 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/survey/:id" element={<Survey />} />
           <Route path="/withdraw" element={<Withdraw />} />
+          <Route path="/packages" element={<Packages />} />
+          <Route path="/validate-payment" element={<ValidatePayment />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
