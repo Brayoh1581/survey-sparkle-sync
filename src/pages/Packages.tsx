@@ -99,15 +99,32 @@ const Packages = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-success mt-0.5" />
-                  <span className="text-sm">Access to {pkg.surveys_allowed} additional surveys</span>
+                  <span className="text-sm">{pkg.surveys_allowed} surveys per day</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-success mt-0.5" />
-                  <span className="text-sm">No daily limits</span>
+                  <span className="text-sm">
+                    {pkg.name === 'Silver Package' && 'Daily income: Ksh 500'}
+                    {pkg.name === 'Gold Package' && 'Daily income: Ksh 1,000'}
+                    {pkg.name === 'Premium Package' && 'Daily income: Ksh 2,000'}
+                    {pkg.name === 'Platinum Package' && 'Daily income: Ksh 2,000'}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-5 h-5 text-success mt-0.5" />
-                  <span className="text-sm">Higher earning potential</span>
+                  <span className="text-sm">
+                    {pkg.name === 'Silver Package' && 'Minimum withdrawal: Ksh 3,000'}
+                    {pkg.name === 'Gold Package' && 'Minimum withdrawal: Ksh 2,500'}
+                    {pkg.name === 'Premium Package' && 'Minimum withdrawal: Ksh 2,000'}
+                    {pkg.name === 'Platinum Package' && 'Minimum withdrawal: Ksh 700'}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-5 h-5 text-success mt-0.5" />
+                  <span className="text-sm">
+                    {(pkg.name === 'Silver Package' || pkg.name === 'Gold Package' || pkg.name === 'Premium Package') && 'Earnings per survey: Ksh 50-100'}
+                    {pkg.name === 'Platinum Package' && 'Earnings per survey: Ksh 100-150'}
+                  </span>
                 </div>
               </div>
 

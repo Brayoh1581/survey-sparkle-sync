@@ -43,7 +43,7 @@ const Index = () => {
     {
       name: "Sarah Mwanza",
       earned: "Kes 2,000",
-      text: "surveypoll changed my life! I earn 2000+ weekly just by sharing my opinions.",
+      text: "Nyota fund survey changed my life! I earn 2000+ weekly just by sharing my opinions.",
       avatar: "👩‍💼"
     },
     {
@@ -66,7 +66,7 @@ const Index = () => {
       <section className="bg-gradient-to-br from-primary-light via-background to-secondary py-20 px-4">
         <div className="container mx-auto max-w-6xl text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary mb-6">
-            Start Earning with surveypoll
+            Start Earning with Nyota fund survey
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8">
             Join 50,000+ users earning real money daily
@@ -127,7 +127,7 @@ const Index = () => {
       <section className="py-20 px-4 bg-background">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16">
-            Why Choose surveypoll?
+            Why Choose Nyota fund survey?
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

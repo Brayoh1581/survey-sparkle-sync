@@ -116,7 +116,7 @@ const Auth = () => {
       <Card className="w-full max-w-md p-8 shadow-2xl border-2 border-border">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">
-            {isLogin ? "Welcome Back!" : "Join surveypoll"}
+            {isLogin ? "Welcome Back!" : "Join Nyota fund survey"}
           </h1>
           <p className="text-muted-foreground">
             {isLogin ? "Sign in to your account" : "Create your account and start earning"}

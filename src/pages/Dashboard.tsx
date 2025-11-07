@@ -140,7 +140,7 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-card border-b border-border shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">surveypoll</h1>
+          <h1 className="text-2xl font-bold text-primary">Nyota fund survey</h1>
           <div className="flex items-center gap-4">
             <span className="text-muted-foreground">Welcome, {profile?.full_name || "User"}!</span>
             <Button variant="outline" onClick={handleSignOut} size="sm">

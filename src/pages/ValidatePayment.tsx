@@ -92,14 +92,13 @@ const ValidatePayment = () => {
           </div>
 
           <div className="bg-card border border-border p-6 rounded-lg mb-8">
-            <h3 className="font-semibold mb-4 text-primary">Payment Instructions:</h3>
+            <h3 className="font-semibold mb-4 text-primary">How To Pay</h3>
             <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Go to M-PESA on your phone</li>
-              <li>Select Lipa Na M-PESA</li>
-              <li>Select Pay Bill</li>
-              <li>Enter Business Number: <strong className="text-foreground">123456</strong></li>
-              <li>Enter Account Number: <strong className="text-foreground">SURVEY</strong></li>
-              <li>Enter Amount: <strong className="text-foreground">Ksh {packagePrice}</strong></li>
+              <li>Go to M-PESA</li>
+              <li>Select: <strong className="text-foreground">Lipa na M-PESA</strong></li>
+              <li>Select: <strong className="text-foreground">Buy Goods and Services</strong></li>
+              <li>Select: <strong className="text-foreground">Enter Till No: 567670</strong></li>
+              <li>Enter amount: <strong className="text-foreground">Ksh {packagePrice}</strong></li>
               <li>Enter your M-PESA PIN and send</li>
               <li>You will receive a confirmation SMS with a payment code</li>
               <li>Enter the payment code below</li>
