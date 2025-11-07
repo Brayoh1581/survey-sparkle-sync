@@ -9,10 +9,15 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Session } from "@supabase/supabase-js";
 
-const authSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  fullName: z.string().min(2, "Name must be at least 2 characters").optional(),
+});
+
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
 });
 
 const Auth = () => {
@@ -50,7 +55,11 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const validation = authSchema.safeParse(formData);
+      // Validate based on login or signup
+      const validation = isLogin 
+        ? loginSchema.safeParse(formData)
+        : signupSchema.safeParse(formData);
+        
       if (!validation.success) {
         toast.error(validation.error.errors[0].message);
         setLoading(false);
