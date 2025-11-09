@@ -177,6 +177,22 @@ const Index = () => {
           </Button>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-4 bg-background border-t border-border">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <img 
+              src="https://www.herbusiness.co.ke/wp-content/uploads/2025/03/Untitled-design-4-300x300.png" 
+              alt="Best Business Blog Award"
+              className="w-32 h-32 object-contain"
+            />
+            <p className="text-muted-foreground text-center font-semibold">
+              Best Business Blog 2018 & 2019
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
