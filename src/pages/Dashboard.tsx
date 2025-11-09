@@ -87,6 +87,10 @@ const Dashboard = () => {
   const hasActivePackage = async () => {
     if (!session?.user?.id) return false;
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check for verified packages
     const { data, error } = await supabase
       .from("package_purchases")
       .select("*, packages(*)")
@@ -98,7 +102,23 @@ const Dashboard = () => {
       return false;
     }
 
-    return (data?.length || 0) > 0;
+    if (!data || data.length === 0) return false;
+
+    // Get today's completed surveys count
+    const { data: todayResponses } = await supabase
+      .from("survey_responses")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .gte("completed_at", today.toISOString());
+
+    const todayCount = todayResponses?.length || 0;
+
+    // Get the most recent package
+    const latestPackage = data[0];
+    const surveysAllowed = (latestPackage.packages as any)?.surveys_allowed || 0;
+
+    // Check if user hasn't exceeded their package limit
+    return todayCount < surveysAllowed;
   };
 
   const handleSignOut = async () => {
@@ -164,7 +184,7 @@ const Dashboard = () => {
               </div>
               <DollarSign className="w-12 h-12 text-primary opacity-20" />
             </div>
-            <Button className="w-full mt-4 bg-primary hover:bg-primary-hover" onClick={() => navigate("/withdraw")}>
+            <Button className="w-full mt-4 bg-warning hover:bg-warning/90 text-black font-semibold" onClick={() => navigate("/withdraw")}>
               Withdraw
             </Button>
           </Card>
@@ -228,7 +248,7 @@ const Dashboard = () => {
                     </span>
                     <Button
                       onClick={() => handleStartSurvey(survey.id)}
-                      className="bg-primary hover:bg-primary-hover"
+                      className="bg-warning hover:bg-warning/90 text-black font-semibold"
                     >
                       Start Survey
                     </Button>

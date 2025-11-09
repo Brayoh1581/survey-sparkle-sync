@@ -15,6 +15,7 @@ const Withdraw = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [minWithdrawal, setMinWithdrawal] = useState(0);
   const [formData, setFormData] = useState({
     amount: "",
     paymentMethod: "",
@@ -50,6 +51,26 @@ const Withdraw = () => {
       .single();
 
     if (data) setBalance(data.balance || 0);
+    
+    // Get user's active package to determine minimum withdrawal
+    const { data: packagePurchase } = await supabase
+      .from("package_purchases")
+      .select("packages(name)")
+      .eq("user_id", userId)
+      .eq("status", "verified")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (packagePurchase?.packages) {
+      const packageName = (packagePurchase.packages as any).name;
+      // Set minimum withdrawal based on package
+      if (packageName === 'Silver Package') setMinWithdrawal(3000);
+      else if (packageName === 'Gold Package') setMinWithdrawal(2500);
+      else if (packageName === 'Premium Package') setMinWithdrawal(2000);
+      else if (packageName === 'Platinum Package') setMinWithdrawal(700);
+      else setMinWithdrawal(0); // No package
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +81,11 @@ const Withdraw = () => {
 
     if (isNaN(amount) || amount <= 0) {
       toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (minWithdrawal > 0 && amount < minWithdrawal) {
+      toast.error(`Minimum withdrawal amount is Ksh ${minWithdrawal} for your package`);
       return;
     }
 
@@ -132,6 +158,11 @@ const Withdraw = () => {
             <p className="text-muted-foreground">
               Available Balance: <span className="text-success font-bold text-xl">Ksh {balance.toFixed(2)}</span>
             </p>
+            {minWithdrawal > 0 && (
+              <p className="text-muted-foreground text-sm mt-1">
+                Minimum withdrawal: <span className="text-warning font-semibold">Ksh {minWithdrawal}</span>
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -211,7 +242,7 @@ const Withdraw = () => {
 
             <Button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover"
+              className="w-full bg-warning hover:bg-warning/90 text-black font-semibold"
               disabled={loading}
             >
               {loading ? "Processing..." : "Submit Withdrawal Request"}

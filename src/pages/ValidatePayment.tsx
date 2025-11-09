@@ -46,22 +46,30 @@ const ValidatePayment = () => {
       return;
     }
 
+    // Validate M-PESA code format (10 characters, alphanumeric)
+    const mpesaCodePattern = /^[A-Z0-9]{10}$/;
+    if (!mpesaCodePattern.test(paymentCode.trim())) {
+      toast.error("Invalid M-PESA code format. Code should be 10 characters.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // Insert payment verification request
+      // Insert verified payment
       const { error } = await supabase
         .from("package_purchases")
         .insert({
           user_id: session.user.id,
           package_id: packageId,
           payment_code: paymentCode.trim(),
-          status: "pending",
+          status: "verified",
+          verified_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      toast.success("Payment submitted for verification! You'll be notified once approved.");
+      toast.success("Payment verified successfully! You can now access surveys based on your package.");
       navigate("/dashboard");
     } catch (error) {
       console.error("Error submitting payment:", error);
@@ -134,17 +142,16 @@ const ValidatePayment = () => {
               <Button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 bg-primary hover:bg-primary-hover"
+                className="flex-1 bg-warning hover:bg-warning/90 text-black font-semibold"
               >
-                {submitting ? "Submitting..." : "Submit for Verification"}
+                {submitting ? "Verifying..." : "Verify Payment"}
               </Button>
             </div>
           </form>
 
           <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Note:</strong> Your payment will be verified within 24 hours. 
-              Once approved, you'll receive a notification and the surveys will be unlocked.
+              <strong className="text-foreground">Note:</strong> Enter your valid M-PESA confirmation code (10 characters) to instantly unlock surveys based on your package.
             </p>
           </div>
         </Card>

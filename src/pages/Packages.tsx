@@ -98,20 +98,20 @@ const Packages = () => {
 
               <div className="space-y-3 mb-6">
                 <div className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-success mt-0.5" />
+                  <Check className="w-5 h-5 text-warning mt-0.5" />
                   <span className="text-sm">{pkg.surveys_allowed} surveys per day</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-success mt-0.5" />
+                  <Check className="w-5 h-5 text-warning mt-0.5" />
                   <span className="text-sm">
                     {pkg.name === 'Silver Package' && 'Daily income: Ksh 500'}
                     {pkg.name === 'Gold Package' && 'Daily income: Ksh 1,000'}
                     {pkg.name === 'Premium Package' && 'Daily income: Ksh 2,000'}
-                    {pkg.name === 'Platinum Package' && 'Daily income: Ksh 2,000'}
+                    {pkg.name === 'Platinum Package' && 'Daily income: Ksh 2,500'}
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-success mt-0.5" />
+                  <Check className="w-5 h-5 text-warning mt-0.5" />
                   <span className="text-sm">
                     {pkg.name === 'Silver Package' && 'Minimum withdrawal: Ksh 3,000'}
                     {pkg.name === 'Gold Package' && 'Minimum withdrawal: Ksh 2,500'}
@@ -120,17 +120,19 @@ const Packages = () => {
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-success mt-0.5" />
+                  <Check className="w-5 h-5 text-warning mt-0.5" />
                   <span className="text-sm">
-                    {(pkg.name === 'Silver Package' || pkg.name === 'Gold Package' || pkg.name === 'Premium Package') && 'Earnings per survey: Ksh 50-100'}
-                    {pkg.name === 'Platinum Package' && 'Earnings per survey: Ksh 100-150'}
+                    {pkg.name === 'Silver Package' && 'Earnings per survey: Ksh 32-74'}
+                    {pkg.name === 'Gold Package' && 'Earnings per survey: Ksh 32-74'}
+                    {pkg.name === 'Premium Package' && 'Earnings per survey: Ksh 32-74'}
+                    {pkg.name === 'Platinum Package' && 'Earnings per survey: Ksh 32-74'}
                   </span>
                 </div>
               </div>
 
               <Button
                 onClick={() => handleSelectPackage(pkg)}
-                className="w-full bg-primary hover:bg-primary-hover"
+                className="w-full bg-warning hover:bg-warning/90 text-black font-semibold"
               >
                 Select Package
               </Button>
