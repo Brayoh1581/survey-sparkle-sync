@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          mpesa_message: string | null
           package_id: string
           payment_code: string
           status: string | null
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          mpesa_message?: string | null
           package_id: string
           payment_code: string
           status?: string | null
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          mpesa_message?: string | null
           package_id?: string
           payment_code?: string
           status?: string | null

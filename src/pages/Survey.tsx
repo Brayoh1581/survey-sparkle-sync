@@ -81,6 +81,22 @@ const Survey = () => {
     e.preventDefault();
     if (!session || !survey) return;
 
+    // Check for pending payment first
+    const { data: pendingPayments } = await supabase
+      .from("package_purchases")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .eq("status", "pending");
+
+    if (pendingPayments && pendingPayments.length > 0) {
+      toast.info("Wait for M-Pesa Payment Verification", {
+        description: "Your payment is being verified. This may take up to 24 hours.",
+        duration: 5000,
+      });
+      navigate("/dashboard");
+      return;
+    }
+
     // Validate all questions are answered
     const allQuestionsAnswered = survey.questions.every((q) => answers[q.id]);
     if (!allQuestionsAnswered) {

@@ -84,6 +84,23 @@ const Dashboard = () => {
     return (data?.length || 0) >= 1;
   };
 
+  const hasPendingPayment = async () => {
+    if (!session?.user?.id) return false;
+
+    const { data, error } = await supabase
+      .from("package_purchases")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .eq("status", "pending");
+
+    if (error) {
+      console.error("Error checking pending payments:", error);
+      return false;
+    }
+
+    return (data?.length || 0) > 0;
+  };
+
   const hasActivePackage = async () => {
     if (!session?.user?.id) return false;
 
@@ -134,6 +151,16 @@ const Dashboard = () => {
   };
 
   const handleStartSurvey = async (surveyId: string) => {
+    const pending = await hasPendingPayment();
+    
+    if (pending) {
+      toast.info("Wait for M-Pesa Payment Verification", {
+        description: "Your payment is being verified. This may take up to 24 hours.",
+        duration: 5000,
+      });
+      return;
+    }
+
     const reachedLimit = await checkDailySurveyLimit();
     const hasPackage = await hasActivePackage();
 

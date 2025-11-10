@@ -12,7 +12,7 @@ const ValidatePayment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
-  const [paymentCode, setPaymentCode] = useState("");
+  const [mpesaMessage, setMpesaMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const packageId = searchParams.get("package");
@@ -41,35 +41,38 @@ const ValidatePayment = () => {
     e.preventDefault();
     if (!session || !packageId) return;
 
-    if (!paymentCode.trim()) {
-      toast.error("Please enter your payment code");
+    if (!mpesaMessage.trim()) {
+      toast.error("Please paste your M-PESA message");
       return;
     }
 
-    // Validate M-PESA code format (10 characters, alphanumeric)
-    const mpesaCodePattern = /^[A-Z0-9]{10}$/;
-    if (!mpesaCodePattern.test(paymentCode.trim())) {
-      toast.error("Invalid M-PESA code format. Code should be 10 characters.");
+    // Extract M-PESA code from message (10 characters, alphanumeric)
+    const mpesaCodePattern = /\b[A-Z0-9]{10}\b/;
+    const match = mpesaMessage.match(mpesaCodePattern);
+    
+    if (!match) {
+      toast.error("Could not find valid M-PESA code in message. Please paste the complete SMS.");
       return;
     }
 
+    const extractedCode = match[0];
     setSubmitting(true);
 
     try {
-      // Insert verified payment
+      // Insert pending payment for verification
       const { error } = await supabase
         .from("package_purchases")
         .insert({
           user_id: session.user.id,
           package_id: packageId,
-          payment_code: paymentCode.trim(),
-          status: "verified",
-          verified_at: new Date().toISOString(),
+          payment_code: extractedCode,
+          mpesa_message: mpesaMessage.trim(),
+          status: "pending",
         });
 
       if (error) throw error;
 
-      toast.success("Payment verified successfully! You can now access surveys based on your package.");
+      toast.success("Payment submitted! Please wait for verification (up to 24 hours).");
       navigate("/dashboard");
     } catch (error) {
       console.error("Error submitting payment:", error);
@@ -115,18 +118,18 @@ const ValidatePayment = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="paymentCode">M-PESA Payment Code</Label>
-              <Input
-                id="paymentCode"
-                type="text"
-                placeholder="e.g., QGH3X8Y9ZW"
-                value={paymentCode}
-                onChange={(e) => setPaymentCode(e.target.value.toUpperCase())}
+              <Label htmlFor="mpesaMessage">M-PESA Confirmation Message</Label>
+              <textarea
+                id="mpesaMessage"
+                placeholder="Paste your entire M-PESA confirmation SMS here..."
+                value={mpesaMessage}
+                onChange={(e) => setMpesaMessage(e.target.value)}
                 required
-                className="font-mono"
+                rows={5}
+                className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <p className="text-xs text-muted-foreground">
-                Enter the confirmation code from your M-PESA SMS
+                Paste the complete M-PESA confirmation SMS you received
               </p>
             </div>
 
@@ -151,7 +154,7 @@ const ValidatePayment = () => {
 
           <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Note:</strong> Enter your valid M-PESA confirmation code (10 characters) to instantly unlock surveys based on your package.
+              <strong className="text-foreground">Note:</strong> Paste your complete M-PESA SMS. Verification takes up to 24 hours. You'll be notified when approved.
             </p>
           </div>
         </Card>
