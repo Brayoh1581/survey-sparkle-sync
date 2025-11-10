@@ -89,6 +89,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          industry: string | null
           phone: string | null
           referral_code: string
           referred_by: string | null
@@ -101,6 +102,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          industry?: string | null
           phone?: string | null
           referral_code: string
           referred_by?: string | null
@@ -113,6 +115,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          industry?: string | null
           phone?: string | null
           referral_code?: string
           referred_by?: string | null
@@ -164,27 +167,33 @@ export type Database = {
       surveys: {
         Row: {
           active: boolean | null
+          company: string | null
           created_at: string | null
           description: string
           id: string
+          industry: string
           payout: number
           questions: Json
           title: string
         }
         Insert: {
           active?: boolean | null
+          company?: string | null
           created_at?: string | null
           description: string
           id?: string
+          industry?: string
           payout: number
           questions: Json
           title: string
         }
         Update: {
           active?: boolean | null
+          company?: string | null
           created_at?: string | null
           description?: string
           id?: string
+          industry?: string
           payout?: number
           questions?: Json
           title?: string

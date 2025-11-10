@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { DollarSign, Users, TrendingUp, LogOut, Copy } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
+import IndustrySelection from "@/components/IndustrySelection";
 
 interface Profile {
   balance: number;
@@ -27,6 +28,8 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userIndustry, setUserIndustry] = useState<string | null>(null);
+  const [showIndustrySelection, setShowIndustrySelection] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -50,13 +53,36 @@ const Dashboard = () => {
 
   const loadDashboardData = async (userId: string) => {
     try {
-      const [profileRes, surveysRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).single(),
-        supabase.from("surveys").select("*").eq("active", true).limit(10),
-      ]);
+      const profileRes = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-      if (profileRes.data) setProfile(profileRes.data);
-      if (surveysRes.data) setSurveys(surveysRes.data);
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        setUserIndustry(profileRes.data.industry);
+        
+        // Show industry selection if user hasn't selected one
+        if (!profileRes.data.industry) {
+          setShowIndustrySelection(true);
+          setLoading(false);
+          return;
+        }
+
+        // Load surveys filtered by user's industry
+        let surveysQuery = supabase
+          .from("surveys")
+          .select("*")
+          .eq("active", true);
+
+        if (profileRes.data.industry) {
+          surveysQuery = surveysQuery.eq("industry", profileRes.data.industry);
+        }
+
+        const surveysRes = await surveysQuery.limit(10);
+        if (surveysRes.data) setSurveys(surveysRes.data);
+      }
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     } finally {
@@ -179,6 +205,20 @@ const Dashboard = () => {
           <div className="text-xl text-muted-foreground">Loading...</div>
         </div>
       </div>
+    );
+  }
+
+  if (showIndustrySelection && session) {
+    return (
+      <IndustrySelection
+        userId={session.user.id}
+        onIndustrySelected={(industry) => {
+          setUserIndustry(industry);
+          setShowIndustrySelection(false);
+          // Reload dashboard data with the new industry
+          loadDashboardData(session.user.id);
+        }}
+      />
     );
   }
 
