@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DollarSign, Users, TrendingUp, LogOut, Copy } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import IndustrySelection from "@/components/IndustrySelection";
+import { INDUSTRIES } from "@/data/industries";
 
 interface Profile {
   balance: number;
@@ -20,6 +21,14 @@ interface Survey {
   title: string;
   description: string;
   payout: number;
+  company: string | null;
+}
+
+interface CompanySurveys {
+  company: string;
+  code: string;
+  color: string;
+  surveys: Survey[];
 }
 
 const Dashboard = () => {
@@ -27,6 +36,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [companySurveys, setCompanySurveys] = useState<CompanySurveys[]>([]);
   const [loading, setLoading] = useState(true);
   const [userIndustry, setUserIndustry] = useState<string | null>(null);
   const [showIndustrySelection, setShowIndustrySelection] = useState(false);
@@ -80,14 +90,43 @@ const Dashboard = () => {
           surveysQuery = surveysQuery.eq("industry", profileRes.data.industry);
         }
 
-        const surveysRes = await surveysQuery.limit(10);
-        if (surveysRes.data) setSurveys(surveysRes.data);
+        const surveysRes = await surveysQuery;
+        if (surveysRes.data) {
+          setSurveys(surveysRes.data);
+          
+          // Group surveys by company
+          const grouped = groupSurveysByCompany(surveysRes.data, profileRes.data.industry);
+          setCompanySurveys(grouped);
+        }
       }
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const groupSurveysByCompany = (surveys: Survey[], industry: string | null): CompanySurveys[] => {
+    if (!industry) return [];
+    
+    const industryData = INDUSTRIES.find(ind => ind.id === industry);
+    if (!industryData) return [];
+
+    const grouped: CompanySurveys[] = [];
+    
+    industryData.companies.forEach(company => {
+      const companySurveys = surveys.filter(s => s.company === company.name);
+      if (companySurveys.length > 0) {
+        grouped.push({
+          company: company.name,
+          code: company.code,
+          color: company.color,
+          surveys: companySurveys
+        });
+      }
+    });
+
+    return grouped;
   };
 
   const checkDailySurveyLimit = async () => {
@@ -289,38 +328,64 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Available Surveys */}
+        {/* Available Surveys by Company */}
         <div>
           <h2 className="text-2xl font-bold text-primary mb-6">Available Surveys</h2>
           
-          {surveys.length === 0 ? (
+          {companySurveys.length === 0 ? (
             <Card className="p-12 text-center bg-card border-2 border-border">
               <p className="text-muted-foreground text-lg">
                 No surveys available at the moment. Check back soon!
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {surveys.map((survey) => (
-                <Card key={survey.id} className="p-6 bg-card border-2 border-border hover:shadow-xl transition-all duration-300">
-                  <h3 className="text-xl font-bold text-card-foreground mb-2">
-                    {survey.title}
-                  </h3>
-                  <p className="text-muted-foreground mb-4 line-clamp-2">
-                    {survey.description}
-                  </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-success">
-                      Ksh {survey.payout.toFixed(2)}
-                    </span>
-                    <Button
-                      onClick={() => handleStartSurvey(survey.id)}
-                      className="bg-warning hover:bg-warning/90 text-black font-semibold"
+            <div className="space-y-8">
+              {companySurveys.map((companyGroup) => (
+                <div key={companyGroup.company} className="space-y-4">
+                  {/* Company Header */}
+                  <div className="flex items-center gap-4">
+                    <div 
+                      className="w-16 h-16 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md"
+                      style={{ backgroundColor: `hsl(${companyGroup.color})` }}
                     >
-                      Start Survey
-                    </Button>
+                      {companyGroup.code}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-card-foreground">
+                        {companyGroup.company}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {companyGroup.surveys.length} surveys available
+                      </p>
+                    </div>
                   </div>
-                </Card>
+
+                  {/* Company Surveys Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {companyGroup.surveys.map((survey) => (
+                      <Card key={survey.id} className="p-5 bg-card border border-border hover:shadow-lg transition-all duration-300">
+                        <h4 className="text-lg font-semibold text-card-foreground mb-2 line-clamp-1">
+                          {survey.title}
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {survey.description}
+                        </p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xl font-bold text-success">
+                            Ksh {survey.payout.toFixed(2)}
+                          </span>
+                          <Button
+                            onClick={() => handleStartSurvey(survey.id)}
+                            className="bg-warning hover:bg-warning/90 text-black font-semibold"
+                            size="sm"
+                          >
+                            Start
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
