@@ -34,7 +34,7 @@ const Index = () => {
     },
     {
       icon: <Star className="w-8 h-8 text-primary" />,
-      title: "4.9★ Rating",
+      title: "4.7★ Rating",
       description: "Rated excellent by our community"
     }
   ];
@@ -108,15 +108,15 @@ const Index = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="bg-card/80 backdrop-blur p-6 rounded-lg shadow-lg border border-border">
-              <div className="text-4xl font-bold text-primary mb-2">50K+</div>
+              <div className="text-4xl font-bold text-primary mb-2">27K+</div>
               <div className="text-muted-foreground">Active Users</div>
             </div>
             <div className="bg-card/80 backdrop-blur p-6 rounded-lg shadow-lg border border-border">
-              <div className="text-4xl font-bold text-primary mb-2">Ksh 200M+</div>
+              <div className="text-4xl font-bold text-primary mb-2">Ksh 36M+</div>
               <div className="text-muted-foreground">Total Payouts</div>
             </div>
             <div className="bg-card/80 backdrop-blur p-6 rounded-lg shadow-lg border border-border">
-              <div className="text-4xl font-bold text-primary mb-2">4.9★</div>
+              <div className="text-4xl font-bold text-primary mb-2">4.7★</div>
               <div className="text-muted-foreground">User Rating</div>
             </div>
           </div>
