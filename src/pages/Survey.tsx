@@ -8,9 +8,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Session } from "@supabase/supabase-js";
+import { GeneratedSurvey } from "@/utils/surveyGenerator";
 
 interface Question {
-  id: string;
   question: string;
   type: "multiple_choice" | "text";
   options?: string[];
@@ -22,6 +22,7 @@ interface SurveyData {
   description: string;
   payout: number;
   questions: Question[];
+  isGenerated?: boolean;
 }
 
 const Survey = () => {
@@ -55,6 +56,30 @@ const Survey = () => {
 
   const loadSurvey = async () => {
     try {
+      // Check if this is a generated survey
+      if (id?.startsWith("generated_")) {
+        const storedSurvey = sessionStorage.getItem("generatedSurvey");
+        if (storedSurvey) {
+          const parsedSurvey: GeneratedSurvey = JSON.parse(storedSurvey);
+          // Add unique IDs to questions for answer tracking
+          const questionsWithIds = parsedSurvey.questions.map((q, idx) => ({
+            ...q,
+            id: `q_${idx}`,
+          }));
+          setSurvey({
+            id: parsedSurvey.id,
+            title: parsedSurvey.title,
+            description: parsedSurvey.description,
+            payout: parsedSurvey.payout,
+            questions: questionsWithIds as Question[],
+            isGenerated: true,
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Load from database
       const { data, error } = await supabase
         .from("surveys")
         .select("*")
@@ -63,9 +88,16 @@ const Survey = () => {
 
       if (error) throw error;
       if (data) {
+        const questions = data.questions as unknown as Question[];
+        // Add IDs to questions if they don't have them
+        const questionsWithIds = questions.map((q, idx) => ({
+          ...q,
+          id: (q as any).id || `q_${idx}`,
+        }));
         setSurvey({
           ...data,
-          questions: data.questions as unknown as Question[]
+          questions: questionsWithIds,
+          isGenerated: false,
         });
       }
     } catch (error) {
@@ -98,7 +130,7 @@ const Survey = () => {
     }
 
     // Validate all questions are answered
-    const allQuestionsAnswered = survey.questions.every((q) => answers[q.id]);
+    const allQuestionsAnswered = survey.questions.every((q) => answers[(q as any).id]);
     if (!allQuestionsAnswered) {
       toast.error("Please answer all questions");
       return;
@@ -107,22 +139,28 @@ const Survey = () => {
     setSubmitting(true);
 
     try {
-      // Submit response
-      const { error: responseError } = await supabase
-        .from("survey_responses")
-        .insert({
-          survey_id: survey.id,
-          user_id: session.user.id,
-          answers,
-        });
+      // For generated surveys, we still record the response but with a different survey_id format
+      const surveyIdForDb = survey.isGenerated 
+        ? null  // We'll skip recording for generated surveys
+        : survey.id;
 
-      if (responseError) {
-        if (responseError.message.includes("duplicate")) {
-          toast.error("You have already completed this survey");
-        } else {
+      // Only record response for non-generated surveys (to avoid foreign key issues)
+      if (!survey.isGenerated) {
+        const { error: responseError } = await supabase
+          .from("survey_responses")
+          .insert({
+            survey_id: surveyIdForDb,
+            user_id: session.user.id,
+            answers,
+          });
+
+        if (responseError) {
+          if (responseError.message.includes("duplicate")) {
+            toast.error("You have already completed this survey");
+            return;
+          }
           throw responseError;
         }
-        return;
       }
 
       // Update balance and create transaction
@@ -180,6 +218,9 @@ const Survey = () => {
         }
       }
 
+      // Clear stored survey
+      sessionStorage.removeItem("generatedSurvey");
+
       toast.success(`Survey completed! You earned Ksh ${survey.payout.toFixed(2)}`);
       navigate("/dashboard");
     } catch (error) {
@@ -223,38 +264,41 @@ const Survey = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {survey.questions.map((question, index) => (
-              <div key={question.id} className="space-y-4">
-                <Label className="text-lg font-semibold">
-                  {index + 1}. {question.question}
-                </Label>
+            {survey.questions.map((question, index) => {
+              const questionId = (question as any).id || `q_${index}`;
+              return (
+                <div key={questionId} className="space-y-4">
+                  <Label className="text-lg font-semibold">
+                    {index + 1}. {question.question}
+                  </Label>
 
-                {question.type === "multiple_choice" && question.options ? (
-                  <RadioGroup
-                    value={answers[question.id] || ""}
-                    onValueChange={(value) =>
-                      setAnswers({ ...answers, [question.id]: value })
-                    }
-                  >
-                    {question.options.map((option, optIndex) => (
-                      <div key={optIndex} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option} id={`${question.id}-${optIndex}`} />
-                        <Label htmlFor={`${question.id}-${optIndex}`}>{option}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                ) : (
-                  <Textarea
-                    value={answers[question.id] || ""}
-                    onChange={(e) =>
-                      setAnswers({ ...answers, [question.id]: e.target.value })
-                    }
-                    placeholder="Enter your answer"
-                    rows={4}
-                  />
-                )}
-              </div>
-            ))}
+                  {question.type === "multiple_choice" && question.options ? (
+                    <RadioGroup
+                      value={answers[questionId] || ""}
+                      onValueChange={(value) =>
+                        setAnswers({ ...answers, [questionId]: value })
+                      }
+                    >
+                      {question.options.map((option, optIndex) => (
+                        <div key={optIndex} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={`${questionId}-${optIndex}`} />
+                          <Label htmlFor={`${questionId}-${optIndex}`}>{option}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  ) : (
+                    <Textarea
+                      value={answers[questionId] || ""}
+                      onChange={(e) =>
+                        setAnswers({ ...answers, [questionId]: e.target.value })
+                      }
+                      placeholder="Enter your answer"
+                      rows={4}
+                    />
+                  )}
+                </div>
+              );
+            })}
 
             <div className="flex gap-4">
               <Button

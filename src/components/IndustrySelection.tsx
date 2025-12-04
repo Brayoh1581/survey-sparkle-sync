@@ -4,20 +4,24 @@ import { Button } from "@/components/ui/button";
 import { INDUSTRIES } from "@/data/industries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Briefcase, Building2, GraduationCap, Heart, Plane, Laptop, Palmtree, Sprout, Hammer, Home, Droplets } from "lucide-react";
+import { 
+  Phone, Building2, Shield, Landmark, ShoppingCart, Factory, 
+  Zap, Wheat, Home, Truck, Cpu, Tv
+} from "lucide-react";
 
 const industryIcons: Record<string, any> = {
-  education: GraduationCap,
-  health: Heart,
-  transport: Plane,
-  ict: Laptop,
-  tourism: Palmtree,
-  agriculture: Sprout,
-  mining: Hammer,
-  business: Briefcase,
-  manufacturing: Building2,
-  housing: Home,
-  water: Droplets,
+  telecommunications: Phone,
+  banking: Building2,
+  insurance: Shield,
+  government: Landmark,
+  retail: ShoppingCart,
+  manufacturing: Factory,
+  energy: Zap,
+  agriculture: Wheat,
+  realestate: Home,
+  transport: Truck,
+  technology: Cpu,
+  media: Tv,
 };
 
 interface IndustrySelectionProps {
@@ -75,7 +79,7 @@ const IndustrySelection = ({ userId, onIndustrySelected }: IndustrySelectionProp
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {INDUSTRIES.map((industry) => {
-            const Icon = industryIcons[industry.id] || Briefcase;
+            const Icon = industryIcons[industry.id] || Building2;
             const isSelected = selectedIndustry === industry.id;
 
             return (
