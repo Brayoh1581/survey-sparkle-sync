@@ -1,44 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { DollarSign, Users, TrendingUp, LogOut, Copy } from "lucide-react";
+import { DollarSign, Users, TrendingUp, LogOut, Copy, RefreshCw } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import IndustrySelection from "@/components/IndustrySelection";
 import { INDUSTRIES } from "@/data/industries";
+import { ensureSurveysAvailable, GeneratedSurvey } from "@/utils/surveyGenerator";
 
 interface Profile {
   balance: number;
   total_earned: number;
   referral_code: string;
   full_name: string;
-}
-
-interface Survey {
-  id: string;
-  title: string;
-  description: string;
-  payout: number;
-  company: string | null;
+  industry: string | null;
 }
 
 interface CompanySurveys {
   company: string;
   code: string;
   color: string;
-  surveys: Survey[];
+  surveys: GeneratedSurvey[];
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [surveys, setSurveys] = useState<Survey[]>([]);
-  const [companySurveys, setCompanySurveys] = useState<CompanySurveys[]>([]);
+  const [surveys, setSurveys] = useState<GeneratedSurvey[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userIndustry, setUserIndustry] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [showIndustrySelection, setShowIndustrySelection] = useState(false);
 
   useEffect(() => {
@@ -71,7 +64,6 @@ const Dashboard = () => {
 
       if (profileRes.data) {
         setProfile(profileRes.data);
-        setUserIndustry(profileRes.data.industry);
         
         // Show industry selection if user hasn't selected one
         if (!profileRes.data.industry) {
@@ -81,23 +73,18 @@ const Dashboard = () => {
         }
 
         // Load surveys filtered by user's industry
-        let surveysQuery = supabase
+        const surveysRes = await supabase
           .from("surveys")
           .select("*")
-          .eq("active", true);
+          .eq("active", true)
+          .eq("industry", profileRes.data.industry);
 
-        if (profileRes.data.industry) {
-          surveysQuery = surveysQuery.eq("industry", profileRes.data.industry);
-        }
-
-        const surveysRes = await surveysQuery;
-        if (surveysRes.data) {
-          setSurveys(surveysRes.data);
-          
-          // Group surveys by company
-          const grouped = groupSurveysByCompany(surveysRes.data, profileRes.data.industry);
-          setCompanySurveys(grouped);
-        }
+        // Use ensureSurveysAvailable to always have surveys
+        const allSurveys = ensureSurveysAvailable(
+          surveysRes.data || [],
+          profileRes.data.industry
+        );
+        setSurveys(allSurveys);
       }
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -106,28 +93,41 @@ const Dashboard = () => {
     }
   };
 
-  const groupSurveysByCompany = (surveys: Survey[], industry: string | null): CompanySurveys[] => {
-    if (!industry) return [];
+  const refreshSurveys = () => {
+    if (!profile?.industry) return;
+    setRefreshing(true);
     
-    const industryData = INDUSTRIES.find(ind => ind.id === industry);
-    if (!industryData) return [];
+    // Regenerate surveys for variety
+    const allSurveys = ensureSurveysAvailable([], profile.industry);
+    setSurveys(allSurveys);
+    
+    setTimeout(() => setRefreshing(false), 500);
+    toast.success("Surveys refreshed!");
+  };
+
+  // Group surveys by company
+  const companySurveys = useMemo((): CompanySurveys[] => {
+    if (!profile?.industry) return [];
+    
+    const industry = INDUSTRIES.find(ind => ind.id === profile.industry);
+    if (!industry) return [];
 
     const grouped: CompanySurveys[] = [];
     
-    industryData.companies.forEach(company => {
-      const companySurveys = surveys.filter(s => s.company === company.name);
-      if (companySurveys.length > 0) {
+    industry.companies.forEach(company => {
+      const compSurveys = surveys.filter(s => s.company === company.name);
+      if (compSurveys.length > 0) {
         grouped.push({
           company: company.name,
           code: company.code,
           color: company.color,
-          surveys: companySurveys
+          surveys: compSurveys
         });
       }
     });
 
     return grouped;
-  };
+  }, [surveys, profile?.industry]);
 
   const checkDailySurveyLimit = async () => {
     if (!session?.user?.id) return false;
@@ -215,7 +215,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleStartSurvey = async (surveyId: string) => {
+  const handleStartSurvey = async (survey: GeneratedSurvey) => {
     const pending = await hasPendingPayment();
     
     if (pending) {
@@ -233,7 +233,13 @@ const Dashboard = () => {
       toast.info("You've completed your free daily survey. Purchase a package to continue!");
       navigate("/packages");
     } else {
-      navigate(`/survey/${surveyId}`);
+      // For generated surveys, store in sessionStorage and navigate
+      if (survey.isGenerated) {
+        sessionStorage.setItem("generatedSurvey", JSON.stringify(survey));
+        navigate(`/survey/generated_${survey.id}`);
+      } else {
+        navigate(`/survey/${survey.id}`);
+      }
     }
   };
 
@@ -252,9 +258,7 @@ const Dashboard = () => {
       <IndustrySelection
         userId={session.user.id}
         onIndustrySelected={(industry) => {
-          setUserIndustry(industry);
           setShowIndustrySelection(false);
-          // Reload dashboard data with the new industry
           loadDashboardData(session.user.id);
         }}
       />
@@ -330,65 +334,68 @@ const Dashboard = () => {
 
         {/* Available Surveys by Company */}
         <div>
-          <h2 className="text-2xl font-bold text-primary mb-6">Available Surveys</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-primary">Available Surveys</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshSurveys}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
           
-          {companySurveys.length === 0 ? (
-            <Card className="p-12 text-center bg-card border-2 border-border">
-              <p className="text-muted-foreground text-lg">
-                No surveys available at the moment. Check back soon!
-              </p>
-            </Card>
-          ) : (
-            <div className="space-y-8">
-              {companySurveys.map((companyGroup) => (
-                <div key={companyGroup.company} className="space-y-4">
-                  {/* Company Header */}
-                  <div className="flex items-center gap-4">
-                    <div 
-                      className="w-16 h-16 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md"
-                      style={{ backgroundColor: `hsl(${companyGroup.color})` }}
-                    >
-                      {companyGroup.code}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-card-foreground">
-                        {companyGroup.company}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {companyGroup.surveys.length} surveys available
-                      </p>
-                    </div>
+          <div className="space-y-8">
+            {companySurveys.map((companyGroup) => (
+              <div key={companyGroup.company} className="space-y-4">
+                {/* Company Header */}
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-16 h-16 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md"
+                    style={{ backgroundColor: `hsl(${companyGroup.color})` }}
+                  >
+                    {companyGroup.code}
                   </div>
-
-                  {/* Company Surveys Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {companyGroup.surveys.map((survey) => (
-                      <Card key={survey.id} className="p-5 bg-card border border-border hover:shadow-lg transition-all duration-300">
-                        <h4 className="text-lg font-semibold text-card-foreground mb-2 line-clamp-1">
-                          {survey.title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                          {survey.description}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xl font-bold text-success">
-                            Ksh {survey.payout.toFixed(2)}
-                          </span>
-                          <Button
-                            onClick={() => handleStartSurvey(survey.id)}
-                            className="bg-warning hover:bg-warning/90 text-black font-semibold"
-                            size="sm"
-                          >
-                            Start
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
+                  <div>
+                    <h3 className="text-xl font-bold text-card-foreground">
+                      {companyGroup.company}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {companyGroup.surveys.length} surveys available
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {/* Company Surveys Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {companyGroup.surveys.map((survey) => (
+                    <Card key={survey.id} className="p-5 bg-card border border-border hover:shadow-lg transition-all duration-300">
+                      <h4 className="text-lg font-semibold text-card-foreground mb-2 line-clamp-1">
+                        {survey.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {survey.description}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xl font-bold text-success">
+                          Ksh {survey.payout.toFixed(2)}
+                        </span>
+                        <Button
+                          onClick={() => handleStartSurvey(survey)}
+                          className="bg-warning hover:bg-warning/90 text-black font-semibold"
+                          size="sm"
+                        >
+                          Start
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
